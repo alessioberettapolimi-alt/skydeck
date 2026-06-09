@@ -9,4 +9,38 @@
     <div id="root"></div>
     <script type="module" src="/src/display/main.tsx"></script>
   </body>
+<iframe 
+    src="/closest.html" 
+    style="
+        position: absolute; 
+        bottom: 20px; 
+        right: 20px; 
+        width: 320px; 
+        height: 280px; 
+        border: none; 
+        z-index: 9999; 
+        background: transparent;
+        overflow: hidden;
+    ">
+</iframe>
+
+<script>
+    (function() {
+        let tabAperto = false;
+
+        function apriTabMonitor() {
+            if (!tabAperto) {
+                // Apre la pagina in un nuovo tab dedicato
+                window.open('/closest.html', '_blank');
+                tabAperto = true;
+                
+                // Rimuoviamo il listener per evitare che riapra altri tab ai clic successivi
+                document.removeEventListener('click', apriTabMonitor);
+            }
+        }
+
+        // Restiamo in ascolto del primo clic dell'utente sulla mappa
+        document.addEventListener('click', apriTabMonitor);
+    })();
+</script>
 </html>

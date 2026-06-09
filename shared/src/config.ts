@@ -113,9 +113,9 @@ export interface Config {
 export const DEFAULT_CONFIG: Config = {
   // Default center: San Francisco International (SFO). Set this to your own
   // location — ideally where you'll be looking up at the ceiling.
-  centerLat: 37.6213,
-  centerLon: -122.379,
-  radiusMiles: 3,
+  centerLat: 45.718685,
+  centerLon: 9.203072,
+  radiusMiles: 20,
 
   rotationDeg: 0,
   mirrorX: true,
@@ -194,3 +194,4 @@ export function mergeConfig(base: Config, patch: Partial<Config>): Config {
     showFields: { ...base.showFields, ...(patch.showFields ?? {}) },
   };
 }
+

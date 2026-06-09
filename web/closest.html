@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skylight - Target Più Vicino</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #widget {
+            border: 2px solid #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            width: 310px; /* Larghezza fissa perfetta per l'iframe */
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+            background-color: rgba(0, 0, 0, 0.9);
+            box-sizing: border-box;
+        }
+        /* Nuovo Header Layout affiancato */
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .header-left {
+            display: flex;
+            flex-direction: column;
+        }
+        .main-callsign {
+            font-size: 1.5em; /* Callsign in grande */
+            letter-spacing: 1px;
+        }
+        .company-name {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 2px;
+        }
+        /* Stile del Logo della Compagnia */
+        .airline-logo {
+            max-height: 40px;
+            max-width: 80px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.3)); /* Gli dà risalto sullo sfondo nero */
+            background: rgba(255, 255, 255, 0.05); /* Leggero contrasto se il logo ha parti scure */
+            padding: 2px;
+            border-radius: 4px;
+        }
+        .data-row { 
+            margin: 6px 0;
+            font-size: 0.9em;
+        }
+        .value { 
+            color: #ffffff; 
+            font-weight: bold;
+        }
+        .no-aircraft {
+            color: #666;
+            font-style: italic;
+            font-size: 0.9em;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="widget">
+        <div class="title">🎯 CLOSEST TARGET</div>
+        <div id="content">
+            <div class="no-aircraft">Inizializzazione flusso dati...</div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/closest.ts"></script>
+</body>
+</html>

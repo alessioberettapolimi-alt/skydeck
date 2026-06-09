@@ -91,3 +91,63 @@ export function deadReckon(
 }
 
 export const EMERGENCY_SQUAWKS = new Set(["7500", "7600", "7700"]);
+
+
+export interface FilteredAircraft {
+  flight: string;
+  altBaro: number;
+  lat: number;
+  lon: number;
+  track?: number;
+  gs?: number;
+  typeName?: string;
+  airline?: string;
+  origin?: string;
+  destination?: string;
+  distanceMiles: number; // Diventerà la distanza 3D reale
+}
+
+export function getClosestFilteredAircraft(
+  aircraftList: any[], 
+  homeLat: number, 
+  homeLon: number,
+  maxMiles: number = 15,
+  minAlt: number = 2000,
+  maxAlt: number = 35000
+): FilteredAircraft | null {
+  let closestAircraft = null;
+  let min3DDistance = Infinity;
+
+  for (const ac of aircraftList) {
+    // Se l'aereo non ha l'altitudine barometrica o non è valida, lo scartiamo subito
+    if (ac.altBaro === undefined || ac.altBaro === null) continue;
+    
+    const alt = ac.altBaro;
+    
+    // 1. Filtro Altitudine Rigoroso
+    if (alt < minAlt || alt > maxAlt) continue;
+
+    // 2. Calcolo distanza nel piano (2D - Haversine)
+    const R = 3958.8; // Raggio della Terra in miglia terrestri
+    const dLat = (ac.lat - homeLat) * Math.PI / 180;
+    const dLon = (ac.lon - homeLon) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(homeLat * Math.PI / 180) * Math.cos(ac.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance2D = R * c;
+
+    // 3. CALCOLO 3D (Slant Range)
+    const altInMiles = alt / 5280;
+    const distance3D = Math.sqrt(Math.pow(distance2D, 2) + Math.pow(altInMiles, 2));
+
+    // 4. Filtro sulla distanza 3D finale rispetto al raggio massimo impostato
+    if (distance3D <= maxMiles && distance3D < min3DDistance) {
+      min3DDistance = distance3D;
+      // Forziamo il salvataggio dei dati correnti per evitare reference a vecchi stati
+      closestAircraft = { ...ac, distanceMiles: distance3D, altBaro: alt };
+    }
+  }
+
+  return closestAircraft;
+}
