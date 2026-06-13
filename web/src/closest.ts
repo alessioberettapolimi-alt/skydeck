@@ -5,7 +5,7 @@ const HOME_LAT = DEFAULT_CONFIG.centerLat; //45.718685;
 const HOME_LON = DEFAULT_CONFIG.centerLon; //9.203072;
 
 const MAX_DISTANCE_MILES = 15;
-const MIN_ALTITUDE_FT = 3500;
+const MIN_ALTITUDE_FT = 3000;
 const MAX_ALTITUDE_FT = 40000;
 
 let lastSnapshot: any = null;
@@ -61,7 +61,22 @@ function updateUI(aircraftList: any[]) {
   );
 
   if (!closestVolo) {
-    container.innerHTML = '<div class="no-aircraft">No aircraft in range (15 mi, 2k-25k ft)</div>';
+    const altitudeLabel = `FL${Math.round(MIN_ALTITUDE_FT / 1000)}-FL${Math.round(MAX_ALTITUDE_FT / 1000)} `;
+    const rangeLabel = `${MAX_DISTANCE_MILES} mi`;
+
+    container.innerHTML = `
+      <article class="airport-panel empty-state-panel">
+        <div class="empty-state-grid">
+          <img class="empty-state-image" src="/pics/homer.png" alt="Home" />
+          <div class="empty-state-copy">
+            <div class="empty-state-kicker">Closest aircraft</div>
+            <div class="empty-state-title">No aircraft in range</div>
+            <div class="empty-state-subtitle">${rangeLabel} • ${altitudeLabel}</div>
+          </div>
+        </div>
+      </article>
+    `;
+    return;
   }
 
   const haTratta = closestVolo.origin && closestVolo.destination;
