@@ -93,11 +93,11 @@ function updateUI(aircraftList: any[]) {
         <div class="logo-box" id="logo-target"></div>
       </div>
 
-      <div class="route-chip">LEG ${renderValue(nextSnapshot.route, lastSnapshot?.route, { frameAll: true, fixedLength: 13 })}</div>
+      <div class="route-chip">ROUTE ${renderValue(nextSnapshot.route, lastSnapshot?.route, { frameAll: true, fixedLength: 13 })}</div>
 
       <div class="panel-grid">
         <div class="metric-card">
-          <div class="metric-label">Dist (3D)</div>
+          <div class="metric-label">Distance (3D)</div>
           <div class="metric-value">${renderValue(nextSnapshot.distance, lastSnapshot?.distance, { frameAll: true, fixedLength: 13 })}</div>
         </div>
         <div class="metric-card">
@@ -105,7 +105,7 @@ function updateUI(aircraftList: any[]) {
           <div class="metric-value">${renderValue(nextSnapshot.altitude, lastSnapshot?.altitude, { frameAll: true, fixedLength: 13 })}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Ground speed</div>
+          <div class="metric-label">Ground Speed</div>
           <div class="metric-value">${renderValue(nextSnapshot.gs, lastSnapshot?.gs, { frameAll: true, fixedLength: 13 })}</div>
         </div>
         <div class="metric-card">
