@@ -18,8 +18,8 @@ body,
   position: absolute;
   right: 18px;
   bottom: 18px;
-  width: min(520px, calc(100vw - 24px));
-  height: min(360px, calc(100vh - 24px));
+  width: min(calc(520px * 1.2), calc(100vw - 24px));
+  height: min(calc(360px * 1.2), calc(100vh - 24px));
   z-index: 9999;
   pointer-events: none;
   background: transparent;

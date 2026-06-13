@@ -86,10 +86,12 @@ function updateUI(aircraftList: any[]) {
   const icaoCompagnia = callsign.substring(0, 3).toLowerCase();
   const logoUrl = callsign.length >= 3 ? `/logos/${icaoCompagnia}.png` : '';
 
-  const airlineLine = `${closestVolo.airline || 'N/A'} • ${(closestVolo as any).typeName || (closestVolo as any).typeCode || 'N/A'}`;
+  const airlineName = closestVolo.airline || 'N/A';
+  const aircraftType = (closestVolo as any).typeName || (closestVolo as any).typeCode || 'N/A';
   const nextSnapshot = {
     callsign: callsign || 'N/A',
-    airlineLine,
+    airlineLine: airlineName,
+    aircraftLine: aircraftType,
     route: rottaString,
     distance: `${closestVolo.distanceMiles.toFixed(1)} mi`,
     altitude: `${closestVolo.altBaro.toLocaleString()} ft`,
@@ -103,7 +105,8 @@ function updateUI(aircraftList: any[]) {
       <div class="panel-top">
         <div class="title-block">
           <span class="callsign">${renderValue(nextSnapshot.callsign, lastSnapshot?.callsign, { frameAll: true, fixedLength: 8 })}</span>
-          <span class="subline">${renderValue(airlineLine, lastSnapshot?.airlineLine, { frameAll: true, fixedLength: 13 })}</span>
+          <span class="subline">${renderValue(nextSnapshot.airlineLine, lastSnapshot?.airlineLine, { frameAll: true, fixedLength: 20 })}</span>
+          <span class="subline subline-secondary">${renderValue(nextSnapshot.aircraftLine, lastSnapshot?.aircraftLine, { frameAll: true, fixedLength: 20 })}</span>
         </div>
         <div class="logo-box" id="logo-target"></div>
       </div>
@@ -113,19 +116,19 @@ function updateUI(aircraftList: any[]) {
       <div class="panel-grid">
         <div class="metric-card">
           <div class="metric-label">Distance (3D)</div>
-          <div class="metric-value">${renderValue(nextSnapshot.distance, lastSnapshot?.distance, { frameAll: true, fixedLength: 13 })}</div>
+          <div class="metric-value">${renderValue(nextSnapshot.distance, lastSnapshot?.distance, { frameAll: true, fixedLength: 9 })}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Altitude</div>
-          <div class="metric-value">${renderValue(nextSnapshot.altitude, lastSnapshot?.altitude, { frameAll: true, fixedLength: 13 })}</div>
+          <div class="metric-value">${renderValue(nextSnapshot.altitude, lastSnapshot?.altitude, { frameAll: true, fixedLength: 9 })}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Ground Speed</div>
-          <div class="metric-value">${renderValue(nextSnapshot.gs, lastSnapshot?.gs, { frameAll: true, fixedLength: 13 })}</div>
+          <div class="metric-value">${renderValue(nextSnapshot.gs, lastSnapshot?.gs, { frameAll: true, fixedLength: 9 })}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Heading</div>
-          <div class="metric-value">${renderValue(nextSnapshot.heading, lastSnapshot?.heading, { frameAll: true, fixedLength: 13 })}</div>
+          <div class="metric-value">${renderValue(nextSnapshot.heading, lastSnapshot?.heading, { frameAll: true, fixedLength: 9 })}</div>
         </div>
       </div>
     </article>
