@@ -5,8 +5,47 @@ const HOME_LAT = DEFAULT_CONFIG.centerLat; //45.718685;
 const HOME_LON = DEFAULT_CONFIG.centerLon; //9.203072;
 
 const MAX_DISTANCE_MILES = 15;
-const MIN_ALTITUDE_FT = 2000;
-const MAX_ALTITUDE_FT = 25000;
+const MIN_ALTITUDE_FT = 3500;
+const MAX_ALTITUDE_FT = 40000;
+
+let lastSnapshot: any = null;
+let lastLogoUrl = '';
+let lastLogoElement: HTMLImageElement | HTMLSpanElement | null = null;
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function renderValue(value: string, previousValue?: string, options: { frameAll?: boolean; fixedLength?: number } = {}): string {
+  const chars = Array.from(value);
+  const previousChars = Array.from(previousValue ?? '');
+  const fixedLength = options.fixedLength ?? 13;
+  const max = Math.max(chars.length, previousChars.length, fixedLength);
+
+  return Array.from({ length: max }, (_, index) => {
+    const char = chars[index] ?? '';
+    const prevChar = previousChars[index] ?? '';
+    const isChanged = char !== prevChar;
+    const shouldFrame = options.frameAll || isChanged;
+
+    if (!shouldFrame) {
+      return char === ' ' || char === '' ? '&nbsp;' : escapeHtml(char);
+    }
+
+    const safeChar = char === ' ' || char === '' ? '&nbsp;' : escapeHtml(char);
+    const classes = ['flip-char'];
+    if (!isChanged) {
+      classes.push('flip-char-static');
+    }
+
+    return `<span class="${classes.join(' ')}" data-text="${safeChar === '&nbsp;' ? ' ' : safeChar}" style="--delay:${index * 14}ms">${safeChar}</span>`;
+  }).join('');
+}
 
 function updateUI(aircraftList: any[]) {
   const container = document.getElementById('content');
@@ -22,8 +61,7 @@ function updateUI(aircraftList: any[]) {
   );
 
   if (!closestVolo) {
-    container.innerHTML = '<div class="no-aircraft">Nessun aereo nel range (15 mi, 2k-25k ft)</div>';
-    return;
+    container.innerHTML = '<div class="no-aircraft">No aircraft in range (15 mi, 2k-25k ft)</div>';
   }
 
   const haTratta = closestVolo.origin && closestVolo.destination;
@@ -33,31 +71,92 @@ function updateUI(aircraftList: any[]) {
   const icaoCompagnia = callsign.substring(0, 3).toLowerCase();
   const logoUrl = callsign.length >= 3 ? `/logos/${icaoCompagnia}.png` : '';
 
+  const airlineLine = `${closestVolo.airline || 'N/A'} • ${(closestVolo as any).typeName || (closestVolo as any).typeCode || 'N/A'}`;
+  const nextSnapshot = {
+    callsign: callsign || 'N/A',
+    airlineLine,
+    route: rottaString,
+    distance: `${closestVolo.distanceMiles.toFixed(1)} mi`,
+    altitude: `${closestVolo.altBaro.toLocaleString()} ft`,
+    gs: closestVolo.gs ? `${Math.round(closestVolo.gs)} kts` : 'N/A',
+    heading: closestVolo.track ? `${Math.round(closestVolo.track)}°` : 'N/A',
+  };
+
   // 1. Generiamo la struttura base senza tag img o stringhe rotte nell'innerHTML
   container.innerHTML = `
-    <div class="widget-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00ff00; padding-bottom: 10px; margin-bottom: 12px;">
-      <div class="header-left">
-        <span class="value" style="font-size: 1.8em; letter-spacing: 1px; line-height: 1.1;">${callsign || 'N/A'}</span>
-      </div>
-      <div class="header-right" id="logo-target" style="display: flex; align-items: center; min-width: 90px; justify-content: flex-end;">
+    <article class="airport-panel">
+      <div class="panel-top">
+        <div class="title-block">
+          <span class="callsign">${renderValue(nextSnapshot.callsign, lastSnapshot?.callsign, { frameAll: true, fixedLength: 8 })}</span>
+          <span class="subline">${renderValue(airlineLine, lastSnapshot?.airlineLine, { frameAll: true, fixedLength: 13 })}</span>
         </div>
-    </div>
+        <div class="logo-box" id="logo-target"></div>
+      </div>
 
-    <div class="widget-body">
-      <div class="data-row">AIRLINE: <span class="value">${closestVolo.airline || 'N/A'}</span></div>
-      <div class="data-row">A/C TYPE: <span class="value">${(closestVolo as any).typeName || (closestVolo as any).typeCode || 'N/A'}</span></div>
-      <div class="data-row">LEG: <span class="value" style="color: #ffff00;">${rottaString}</span></div>
-      <div class="data-row">DIST (3D): <span class="value">${closestVolo.distanceMiles.toFixed(1)} mi</span></div>
-      <div class="data-row">ALTITUDE: <span class="value">${closestVolo.altBaro.toLocaleString()} ft</span></div>
-      <div class="data-row">GS: <span class="value">${closestVolo.gs ? `${Math.round(closestVolo.gs)} kts` : 'N/A'}</span></div>
-      <div class="data-row">HDG: <span class="value">${closestVolo.track ? `${Math.round(closestVolo.track)}°` : 'N/A'}</span></div>
-    </div>
+      <div class="route-chip">LEG ${renderValue(nextSnapshot.route, lastSnapshot?.route, { frameAll: true, fixedLength: 13 })}</div>
+
+      <div class="panel-grid">
+        <div class="metric-card">
+          <div class="metric-label">Dist (3D)</div>
+          <div class="metric-value">${renderValue(nextSnapshot.distance, lastSnapshot?.distance, { frameAll: true, fixedLength: 13 })}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Altitude</div>
+          <div class="metric-value">${renderValue(nextSnapshot.altitude, lastSnapshot?.altitude, { frameAll: true, fixedLength: 13 })}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Ground speed</div>
+          <div class="metric-value">${renderValue(nextSnapshot.gs, lastSnapshot?.gs, { frameAll: true, fixedLength: 13 })}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Heading</div>
+          <div class="metric-value">${renderValue(nextSnapshot.heading, lastSnapshot?.heading, { frameAll: true, fixedLength: 13 })}</div>
+        </div>
+      </div>
+    </article>
   `;
 
 // 2. Iniettiamo l'immagine in modo sicuro manipolando il DOM direttamente
  // 2. Elaboriamo l'immagine in memoria per evitare il flickering
   const logoTarget = document.getElementById('logo-target');
-  if (logoTarget && logoUrl) {
+  const fallbackCode = callsign.length >= 3 ? callsign.substring(0, 3).toUpperCase() : 'N/A';
+
+  if (logoTarget) {
+    if (!logoUrl) {
+      const fallback = document.createElement('span');
+      fallback.textContent = fallbackCode;
+      fallback.style.display = 'flex';
+      fallback.style.alignItems = 'center';
+      fallback.style.justifyContent = 'center';
+      fallback.style.width = '100%';
+      fallback.style.height = '100%';
+      fallback.style.border = 'none';
+      fallback.style.borderRadius = '0';
+      fallback.style.padding = '0';
+      fallback.style.fontSize = '1.30em';
+      fallback.style.lineHeight = '1';
+      fallback.style.color = '#111827';
+      fallback.style.background = 'transparent';
+      fallback.style.fontWeight = '800';
+      fallback.style.letterSpacing = '0.18em';
+      fallback.style.textTransform = 'uppercase';
+      fallback.style.boxShadow = 'none';
+      logoTarget.innerHTML = '';
+      logoTarget.appendChild(fallback);
+      lastLogoUrl = logoUrl;
+      lastLogoElement = fallback;
+      lastSnapshot = nextSnapshot;
+      return;
+    }
+
+    if (lastLogoUrl === logoUrl && lastLogoElement) {
+      if (logoTarget.innerHTML !== lastLogoElement.outerHTML) {
+        logoTarget.innerHTML = '';
+        logoTarget.appendChild(lastLogoElement);
+      }
+      return;
+    }
+
     // Creiamo l'oggetto immagine SOLO in memoria (non è ancora nel DOM)
     const imgInMemory = new Image();
     imgInMemory.src = logoUrl;
@@ -101,15 +200,17 @@ function updateUI(aircraftList: any[]) {
           const finalImg = document.createElement('img');
           finalImg.src = canvas.toDataURL(); // Sorgente già elaborata!
           finalImg.alt = icaoCompagnia.toUpperCase();
-          finalImg.style.maxHeight = '38px';
-          finalImg.style.maxWidth = '90px';
+          finalImg.style.maxHeight = '68px';
+          finalImg.style.maxWidth = '140px';
           finalImg.style.objectFit = 'contain';
           finalImg.style.display = 'block';
-          finalImg.style.filter = 'drop-shadow(0 0 2px rgba(0, 255, 0, 0.5))';
+          finalImg.style.filter = 'drop-shadow(0 0 2px rgba(220, 220, 220, 0.35))';
 
           // Svuotiamo il target e appendiamo l'immagine già perfetta
           logoTarget.innerHTML = '';
           logoTarget.appendChild(finalImg);
+          lastLogoUrl = logoUrl;
+          lastLogoElement = finalImg;
         }
       } catch (e) {
         // Se il canvas fallisce, mostriamo l'immagine originale come fallback
@@ -117,8 +218,8 @@ function updateUI(aircraftList: any[]) {
         logoTarget.innerHTML = '';
         const fallbackImg = document.createElement('img');
         fallbackImg.src = logoUrl;
-        fallbackImg.style.maxHeight = '38px';
-        fallbackImg.style.maxWidth = '90px';
+        fallbackImg.style.maxHeight = '68px';
+        fallbackImg.style.maxWidth = '140px';
         fallbackImg.style.objectFit = 'contain';
         logoTarget.appendChild(fallbackImg);
       }
@@ -126,13 +227,32 @@ function updateUI(aircraftList: any[]) {
 
     // Se il file .png non esiste proprio sul server, mostriamo il badge verde protettivo
     imgInMemory.onerror = () => {
-      logoTarget.innerHTML = `
-        <span style="border: 1px solid #00ff00; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; color: #00ff00; background: rgba(0,255,0,0.1); font-weight: bold;">
-          ${icaoCompagnia.toUpperCase()}
-        </span>
-      `;
+      const fallback = document.createElement('span');
+      fallback.textContent = fallbackCode;
+      fallback.style.display = 'flex';
+      fallback.style.alignItems = 'center';
+      fallback.style.justifyContent = 'center';
+      fallback.style.width = '100%';
+      fallback.style.height = '100%';
+      fallback.style.border = 'none';
+      fallback.style.borderRadius = '0';
+      fallback.style.padding = '0';
+      fallback.style.fontSize = '1.30em';
+      fallback.style.lineHeight = '1';
+      fallback.style.color = '#111827';
+      fallback.style.background = 'transparent';
+      fallback.style.fontWeight = '800';
+      fallback.style.letterSpacing = '0.18em';
+      fallback.style.textTransform = 'uppercase';
+      fallback.style.boxShadow = 'none';
+      logoTarget.innerHTML = '';
+      logoTarget.appendChild(fallback);
+      lastLogoUrl = logoUrl;
+      lastLogoElement = fallback;
     };
   }
+
+  lastSnapshot = nextSnapshot;
 }
 
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -140,7 +260,7 @@ const wsUrl = `${protocol}//${window.location.host}/ws`;
 const socket = new WebSocket(wsUrl);
 
 socket.onopen = () => {
-  console.log("Connesso con successo al flusso dati di Skylight!");
+  console.log("Connected successfully to Skylight's data stream!");
 };
 
 socket.onmessage = (event) => {
@@ -150,12 +270,13 @@ socket.onmessage = (event) => {
       updateUI(data.aircraft);
     }
   } catch (err) {
-    console.error("Errore nel parsing dei dati:", err);
+    console.error("Error parsing data:", err);
   }
 };
 
+
 socket.onerror = (err) => {
-  console.error("Errore connessione flusso dati:", err);
+  console.error("Connection error data flow:", err);
 };
 
 socket.onclose = () => {

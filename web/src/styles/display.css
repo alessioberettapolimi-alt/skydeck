@@ -13,6 +13,25 @@ body,
   background: #000;
   overflow: hidden;
 }
+
+.closest-widget-shell {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: min(520px, calc(100vw - 24px));
+  height: min(360px, calc(100vh - 24px));
+  z-index: 9999;
+  pointer-events: none;
+  background: transparent;
+}
+
+.closest-widget-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+}
 .display-body {
   cursor: none; /* hidden on the projector; unclutter also runs on the Pi */
 }
@@ -59,4 +78,32 @@ body,
   right: 16px;
   font: 12px "JetBrains Mono", ui-monospace, monospace;
   color: #6b7280;
+}
+
+@keyframes flipTop {
+  0% { transform: rotateX(0deg); }
+  100% { transform: rotateX(-90deg); }
+}
+
+@keyframes flipBottom {
+  0% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+.flap-card {
+  perspective: 300px;
+}
+
+.flap-top, .flap-bottom {
+  backface-visibility: hidden;
+}
+
+.animate-flip-top {
+  transform-origin: bottom;
+  animation: flipTop 0.15s ease-in forwards;
+}
+
+.animate-flip-bottom {
+  transform-origin: top;
+  animation: flipBottom 0.15s ease-out 0.15s forwards;
 }
