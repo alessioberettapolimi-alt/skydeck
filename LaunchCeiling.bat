@@ -1,6 +1,6 @@
 @echo off
-title Starting Skylight Radar
-cd /d C:\repos\skylight
+title Starting SkyDeck Radar
+cd /d C:\repos\skydeck
 echo Starting the server...
 
 :: Open browser page
