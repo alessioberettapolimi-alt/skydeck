@@ -40,9 +40,17 @@ export class Connection {
     this.open();
   }
 
-  private url(): string {
+private url(): string {
     const proto = location.protocol === "https:" ? "wss" : "ws";
-    return `${proto}://${location.host}/ws`;
+    
+    const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    
+    const backendHost = isLocal 
+      ? "localhost:3000" 
+      : `${location.hostname}:3000`;
+
+    // Aggiungiamo nuovamente il path /ws alla fine dell'indirizzo diretto
+    return `${proto}://${backendHost}/ws`;
   }
 
   private open(): void {
