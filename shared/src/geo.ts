@@ -104,7 +104,9 @@ export interface FilteredAircraft {
   airline?: string;
   origin?: string;
   destination?: string;
-  distanceMiles: number; // Diventerà la distanza 3D reale
+  originName?: string;
+  destName?: string;
+  distanceMiles: number; // 3D distance in miles from home position
 }
 
 export function getClosestFilteredAircraft(
@@ -119,15 +121,15 @@ export function getClosestFilteredAircraft(
   let min3DDistance = Infinity;
 
   for (const ac of aircraftList) {
-    // Se l'aereo non ha l'altitudine barometrica o non è valida, lo scartiamo subito
+    // Exclude A/C based on altitude filter
     if (ac.altBaro === undefined || ac.altBaro === null) continue;
     
     const alt = ac.altBaro;
     
-    // 1. Filtro Altitudine Rigoroso
+    // 1. Altitude filter 
     if (alt < minAlt || alt > maxAlt) continue;
 
-    // 2. Calcolo distanza nel piano (2D - Haversine)
+    // 2. 2D Calculation - Haversine
     const R = 3958.8; // Raggio della Terra in miglia terrestri
     const dLat = (ac.lat - homeLat) * Math.PI / 180;
     const dLon = (ac.lon - homeLon) * Math.PI / 180;
@@ -137,11 +139,11 @@ export function getClosestFilteredAircraft(
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     const distance2D = R * c;
 
-    // 3. CALCOLO 3D (Slant Range)
+    // 3. 3D Calculation - Slant Range
     const altInMiles = alt / 5280;
     const distance3D = Math.sqrt(Math.pow(distance2D, 2) + Math.pow(altInMiles, 2));
 
-    // 4. Filtro sulla distanza 3D finale rispetto al raggio massimo impostato
+    // 4. 3D filter from home based on radius and altitude
     if (distance3D <= maxMiles && distance3D < min3DDistance) {
       min3DDistance = distance3D;
       // Forziamo il salvataggio dei dati correnti per evitare reference a vecchi stati

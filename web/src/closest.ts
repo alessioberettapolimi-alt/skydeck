@@ -5,7 +5,7 @@ const HOME_LAT = DEFAULT_CONFIG.centerLat; //45.718685;
 const HOME_LON = DEFAULT_CONFIG.centerLon; //9.203072;
 
 const MAX_DISTANCE_MILES = 15;
-const MIN_ALTITUDE_FT = 3000;
+const MIN_ALTITUDE_FT = 3500;
 const MAX_ALTITUDE_FT = 40000;
 
 let lastSnapshot: any = null;
@@ -51,7 +51,7 @@ function updateUI(aircraftList: any[]) {
   const container = document.getElementById('content');
   if (!container) return;
 
-  const closestVolo = getClosestFilteredAircraft(
+  const closestTarget = getClosestFilteredAircraft(
     aircraftList,
     HOME_LAT,
     HOME_LON,
@@ -59,8 +59,15 @@ function updateUI(aircraftList: any[]) {
     MIN_ALTITUDE_FT,
     MAX_ALTITUDE_FT
   );
+  
+  // 🔍 DEBUG: log closest aircraft full data (F12/Console)
+  if (closestTarget) {
+    console.log("========== CLOSEST AIRCRAFT (FULL DATA) ==========");
+    console.log(JSON.stringify(closestTarget, null, 2));
+    console.log("==================================================");
+  }
 
-  if (!closestVolo) {
+  if (!closestTarget) {
     const altitudeLabel = `FL${Math.round(MIN_ALTITUDE_FT / 1000)}-FL${Math.round(MAX_ALTITUDE_FT / 1000)} `;
     const rangeLabel = `${MAX_DISTANCE_MILES} mi`;
 
@@ -79,25 +86,36 @@ function updateUI(aircraftList: any[]) {
     return;
   }
 
-  const haTratta = closestVolo.origin && closestVolo.destination;
-  const rottaString = haTratta ? `${closestVolo.origin} ➔ ${closestVolo.destination}` : 'N/A';
-  const callsign = closestVolo.flight ? closestVolo.flight.trim() : '';
+  const containsPairs = closestTarget.origin && closestTarget.destination;
+  const cityPairString = containsPairs ? `${closestTarget.origin} - ${closestTarget.destination}` : 'N/A';
+  const depNameString  = closestTarget.originName || 'Unknown';
+  const destNameString = closestTarget.destName || 'SHIT!';
+
+  const callsign = closestTarget.flight ? closestTarget.flight.trim() : '';
 
   const icaoCompagnia = callsign.substring(0, 3).toLowerCase();
   const logoUrl = callsign.length >= 3 ? `/logos/${icaoCompagnia}.png` : '';
 
-  const airlineName = closestVolo.airline || 'N/A';
-  const aircraftType = (closestVolo as any).typeName || (closestVolo as any).typeCode || 'N/A';
+  const airlineName = closestTarget.airline || 'N/A';
+  const aircraftType = (closestTarget as any).typeName || (closestTarget as any).typeCode || 'N/A';
   const nextSnapshot = {
     callsign: callsign || 'N/A',
-    airlineLine: airlineName,
-    aircraftLine: aircraftType,
-    route: rottaString,
-    distance: `${closestVolo.distanceMiles.toFixed(1)} mi`,
-    altitude: `${closestVolo.altBaro.toLocaleString()} ft`,
-    gs: closestVolo.gs ? `${Math.round(closestVolo.gs)} kts` : 'N/A',
-    heading: closestVolo.track ? `${Math.round(closestVolo.track)}°` : 'N/A',
+    airlineLine: truncate(airlineName, 20),
+    aircraftLine: truncate(aircraftType, 20),
+    route: truncate(cityPairString, 9),
+    depDest: truncate(depNameString + '-' + destNameString, 20),
+    distance: `${closestTarget.distanceMiles.toFixed(1)} mi`,
+    baro: `${closestTarget.altBaro.toLocaleString()} ft`,
+    gs: closestTarget.gs ? `${Math.round(closestTarget.gs)} kts` : 'N/A',
+    track: closestTarget.track ? `${Math.round(closestTarget.track)} deg` : 'N/A',
   };
+  
+  function truncate(value: string, maxLength: number): string {
+    if (!value) return '';
+    return value.length > maxLength
+      ? value.substring(0, maxLength) + '…'
+      : value;
+  }
 
   // 1. Generiamo la struttura base senza tag img o stringhe rotte nell'innerHTML
   container.innerHTML = `
@@ -107,11 +125,12 @@ function updateUI(aircraftList: any[]) {
           <span class="callsign">${renderValue(nextSnapshot.callsign, lastSnapshot?.callsign, { frameAll: true, fixedLength: 8 })}</span>
           <span class="subline">${renderValue(nextSnapshot.airlineLine, lastSnapshot?.airlineLine, { frameAll: true, fixedLength: 20 })}</span>
           <span class="subline subline-secondary">${renderValue(nextSnapshot.aircraftLine, lastSnapshot?.aircraftLine, { frameAll: true, fixedLength: 20 })}</span>
+          <span class="subline subline-secondary">${renderValue(nextSnapshot.depDest, lastSnapshot?.depDest, { frameAll: true, fixedLength: 20 })}</span>
         </div>
         <div class="logo-box" id="logo-target"></div>
       </div>
 
-      <div class="route-chip">ROUTE ${renderValue(nextSnapshot.route, lastSnapshot?.route, { frameAll: true, fixedLength: 13 })}</div>
+      <div class="route-chip">${renderValue(nextSnapshot.route, lastSnapshot?.route, { frameAll: true, fixedLength: 9 })}</div>
 
       <div class="panel-grid">
         <div class="metric-card">
@@ -119,23 +138,22 @@ function updateUI(aircraftList: any[]) {
           <div class="metric-value">${renderValue(nextSnapshot.distance, lastSnapshot?.distance, { frameAll: true, fixedLength: 9 })}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Altitude</div>
-          <div class="metric-value">${renderValue(nextSnapshot.altitude, lastSnapshot?.altitude, { frameAll: true, fixedLength: 9 })}</div>
+          <div class="metric-label">Baro Alt.</div>
+          <div class="metric-value">${renderValue(nextSnapshot.baro, lastSnapshot?.altitude, { frameAll: true, fixedLength: 9 })}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Ground Speed</div>
           <div class="metric-value">${renderValue(nextSnapshot.gs, lastSnapshot?.gs, { frameAll: true, fixedLength: 9 })}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Heading</div>
-          <div class="metric-value">${renderValue(nextSnapshot.heading, lastSnapshot?.heading, { frameAll: true, fixedLength: 9 })}</div>
+          <div class="metric-label">Track</div>
+          <div class="metric-value">${renderValue(nextSnapshot.track, lastSnapshot?.heading, { frameAll: true, fixedLength: 9 })}</div>
         </div>
       </div>
     </article>
   `;
 
-// 2. Iniettiamo l'immagine in modo sicuro manipolando il DOM direttamente
- // 2. Elaboriamo l'immagine in memoria per evitare il flickering
+// 2. Iniettiamo l'immagine in modo sicuro manipolando il DOM direttamente, elaboriamo l'immagine in memoria per evitare il flickering
   const logoTarget = document.getElementById('logo-target');
   const fallbackCode = callsign.length >= 3 ? callsign.substring(0, 3).toUpperCase() : 'N/A';
 
